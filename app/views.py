@@ -10,11 +10,9 @@ from models import User, ROLE_USER, ROLE_ADMIN
 def load_user(id):
     return User.query.get(int(id))
 
-
 @app.before_request
 def before_request():
     g.user = current_user
-
 
 @app.route('/')
 @app.route('/index')
@@ -36,7 +34,6 @@ def index():
                            user=user,
                            posts=posts)
 
-
 @app.route('/login', methods=['GET', 'POST'])
 @oid.loginhandler
 def login():
@@ -50,7 +47,6 @@ def login():
                            title='Sign In',
                            form=form,
                            providers=app.config['OPENID_PROVIDERS'])
-
 
 @oid.after_login
 def after_login(resp):
@@ -71,6 +67,19 @@ def after_login(resp):
         session.pop('remember_me', None)
     login_user(user, remember=remember_me)
     return redirect(request.args.get('next') or url_for('index'))
+
+@app.route('/user/<nickname>')
+@login_required
+def user(nickname):
+    user = User.query.filter_by(nickname=nickname).first()
+    if user == None:
+        flash('User ' + nickname + ' not found')
+        return redirect(url_for('index'))
+    posts = [
+        {'author': user, 'body': 'Test post #1'},
+        {'author': user, 'body': 'Test Post #2'}
+    ]
+    return render_template('user.html', user=user, posts=posts)
 
 
 @app.route('/logout')
